@@ -379,11 +379,9 @@ sub _main_retry_handler {
     # Retry handler is disabled?
     $self->_reset_and_die if $self->disable_retry_handler;
 
-    ### FIXME: Need to check that _seems_connected implies it was already connected at one point
-
-    # If we're still connected and it's not a retryable error, stop here
+    # If it's not a retryable error, stop here
     my $parsed_error = $self->parse_error_class->new($last_error);
-    $self->_reset_and_die if $self->_seems_connected && !$parsed_error->is_transient;
+    $self->_reset_and_die unless $parsed_error->is_transient;
 
     # Either stop here (because of timeout or max attempts), sleep, or don't
     if    ($sleep_time == -1) { $self->_reset_and_die }
