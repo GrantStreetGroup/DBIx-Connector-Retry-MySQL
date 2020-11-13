@@ -393,9 +393,11 @@ sub _main_retry_handler {
         $self->_set_dbi_connect_info;
     }
 
-    # Force a disconnect
-    local $@;
-    eval { local $SIG{__DIE__}; $self->disconnect };
+    # Force a disconnect, but only if the connection seems to be in a broken state
+    unless ($parsed_error->error_type eq 'lock') {
+        local $@;
+        eval { local $SIG{__DIE__}; $self->disconnect };
+    }
 
     return 1;
 }
@@ -449,12 +451,13 @@ See L<DBIx::Connector::Retry/Savepoints and nested transactions>.
 
 Due to the caveats of L<DBIx::Connector::Retry/Fixup mode>, C<fixup> mode is changed to
 just act like C<no_ping> mode.  However, C<no_ping> mode is safer to use in this module
-because it comes with the same retry protections as the other modes.  All retries come
-with a explicit disconnect to make sure it starts back up with a clean slate.
+because it comes with the same retry protections as the other modes.  Certain retries,
+such as connection/server errors, come with an explicit disconnect to make sure it starts
+back up with a clean slate.
 
-In C<ping> mode, the DB will be pinged on the first try.  Due to the explicit
-disconnection, all other retries will simply connect back to the DB and run the code,
-without a superfluous ping.
+In C<ping> mode, the DB will be pinged on the first try.  If the retry explicitly
+disconnected, the connector will simply connect back to the DB and run the code, without
+a superfluous ping.
 
 =cut
 
