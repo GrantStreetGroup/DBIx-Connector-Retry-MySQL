@@ -333,6 +333,17 @@ sub _set_retry_session_timeouts {
     }
 }
 
+# Override fixup methods (pretend we're using no_ping mode with our own retry protections)
+sub _fixup_run {
+    my ($self, $code) = @_;
+    return $self->_run($code);
+}
+
+sub _txn_fixup_run {
+    my ($self, $code) = @_;
+    return $self->_txn_run($code);
+}
+
 # Modifications of the main retry loop
 around _retry_loop => sub {
     my $orig = shift;
@@ -384,10 +395,6 @@ sub _main_retry_handler {
         $self->_set_dbi_connect_info;
     }
 
-    # If we're this far, make sure we're not using fixup mode, per notes on
-    # L<DBIx::Connector::Retry/Fixup-mode>.
-    $self->mode('ping') if $self->mode eq 'fixup';
-
     # Force a disconnect
     local $@;
     eval { local $SIG{__DIE__}; $self->disconnect };
@@ -431,6 +438,25 @@ sub _reset_and_die {
 }
 
 =head1 CAVEATS
+
+=head2 $dbh settings
+
+See L<DBIx::Connector::Retry/$dbh settings>.
+
+=head2 Savepoints and nested transactions
+
+See L<DBIx::Connector::Retry/Savepoints and nested transactions>.
+
+=head2 Connection modes
+
+Due to the caveats of L<DBIx::Connector::Retry/Fixup mode>, C<fixup> mode is changed to
+just act like C<no_ping> mode.  However, C<no_ping> mode is safer to use in this module
+because it comes with the same retry protections as the other modes.  All retries come
+with a explicit disconnect to make sure it starts back up with a clean slate.
+
+In C<ping> mode, the DB will be pinged on the first try.  Due to the explicit
+disconnection, all other retries will simply connect back to the DB and run the code,
+without a superfluous ping.
 
 =cut
 
