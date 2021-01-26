@@ -53,7 +53,7 @@ use namespace::clean;  # don't export the above
 =head1 DESCRIPTION
 
 DBIx::Connector::Retry::MySQL is a subclass of L<DBIx::Connector::Retry> that will
-specifically retry on MySQL-specific transient error messages, as identified by
+explicitly retry on MySQL-specific transient error messages, as identified by
 L<DBIx::ParseError::MySQL>, using L<Algorithm::Backoff::RetryTimeouts> as its retry
 algorithm.  This connector should be much better at handling deadlocks, connection
 errors, and Galera node flips to ensure the transaction always goes through.
@@ -87,9 +87,28 @@ sub max_attempts {
     return $opts->{max_attempts} // 8;
 }
 
-### FIXME: Enhance retry_debug with _reset_and_die style messages
+=head2 retry_debug
 
-=head2 L<retry_debug|DBIx::Connector::Retry/retry_debug>
+Like L<retry_debug|DBIx::Connector::Retry/retry_debug>, this turns on debug warnings for
+retries.  But, this module has a bit more detail in the messages.
+
+=cut
+
+sub _warn_retry_debug {
+    my $self = shift;
+
+    my $timer = $self->_timer;
+    my $current_attempt_count = $self->failed_attempt_count + 1;
+    my $debug_msg = sprintf(
+        'Retrying %s coderef, attempt %u of %u, timer: %.1f / %.1f sec, last exception: %s',
+        $self->execute_method,
+        $current_attempt_count, $self->max_attempts,
+        $timer->{_last_timestamp} - $timer->{_start_timestamp}, $timer->{max_actual_duration},
+        $self->last_exception
+    );
+
+    warn $debug_msg;
+}
 
 =head2 retry_handler
 
@@ -377,15 +396,15 @@ sub _main_retry_handler {
     my ($sleep_time, $new_timeout) = $self->_timer->failure;
 
     # Retry handler is disabled?
-    $self->_reset_and_die if $self->disable_retry_handler;
+    $self->_reset_and_die('Retry handler disabled') if $self->disable_retry_handler;
 
     # If it's not a retryable error, stop here
     my $parsed_error = $self->parse_error_class->new($last_error);
-    $self->_reset_and_die unless $parsed_error->is_transient;
+    $self->_reset_and_die('Exception not transient') unless $parsed_error->is_transient;
 
     # Either stop here (because of timeout or max attempts), sleep, or don't
-    if    ($sleep_time == -1) { $self->_reset_and_die }
-    elsif ($sleep_time)       { sleep $sleep_time;    }
+    if    ($sleep_time == -1) { $self->_reset_and_die('Out of retries') }
+    elsif ($sleep_time)       { sleep $sleep_time;                      }
 
     if ($new_timeout > 0) {
         # Reset the connection timeouts before we connect again
@@ -420,14 +439,15 @@ sub _reset_timers_and_timeouts {
 }
 
 sub _reset_and_die {
-    my $self = shift;
+    my ($self, $fail_reason) = @_;
 
     # First error: just pass it unaltered
     die $self->last_exception if $self->failed_attempt_count <= 1;
 
     my $timer = $self->_timer;
     my $error = sprintf(
-        'Out of retries, attempts: %u / %u, timer: %.1f / %.1f sec, last exception: %s',
+        'Failed %s coderef: %s, attempts: %u / %u, timer: %.1f / %.1f sec, last exception: %s',
+        $self->execute_method, $fail_reason,
         $self->failed_attempt_count, $self->max_attempts,
         $timer->{_last_timestamp} - $timer->{_start_timestamp}, $timer->{max_actual_duration},
         $self->last_exception
