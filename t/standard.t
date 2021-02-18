@@ -1,6 +1,5 @@
 #!/usr/bin/perl
 
-use lib qw(t/lib);
 use strict;
 use warnings;
 
