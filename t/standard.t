@@ -23,6 +23,14 @@ my $db_file = $root->file('t', 'test.db');
 # The SQL and the lack of a real database doesn't really matter, since the sole purpose
 # of this engine is to handle certain exceptions and react to them.  However,
 # running this with a proper MySQL DBITEST_DSN would grant some additional $dbh checks.
+#
+# To specify a MySQL DB, you'll need a call like:
+#
+# DBITEST_DSN='dbi:mysql:database=ddl_test;host=...' DBITEST_DBUSER=... DBITEST_DBPASS=... prove -lrv t
+#
+# It will then use that database, instead of a default SQLite one.  Make sure the
+# database doesn't have any useful data in it.  The database must exist prior to running
+# the test.
 
 our $EXEC_COUNTER    = 0;
 our $EXEC_SUCCESS_AT = 4;
