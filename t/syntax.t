@@ -27,7 +27,9 @@ sub _connector {
 }
 
 # Completely ignore DB activity
+no warnings 'redefine';
 *DBI::db::do = sub { "0E0" };
+use warnings 'redefine';
 
 ############################################################
 
