@@ -167,7 +167,13 @@ sub run_update_test {
             $args{extra_args} ? %{ $args{extra_args} } : ()
         );
 
-        skip "Can't use aggressive timeouts for non-MySQL DSN", 12 if !$IS_MYSQL && $conn->aggressive_timeouts;
+        # Aggressive timeout skip checks
+        my $agg_skip_reason;
+        if ($conn->aggressive_timeouts) {
+            unless ($IS_MYSQL)                    { $agg_skip_reason = 'with a non-MySQL DSN'; }
+            elsif  ($DBD::mysql::VERSION < 4.023) { $agg_skip_reason = 'on this version of DBD::mysql'; }
+        }
+        skip "Can't use aggressive timeouts $agg_skip_reason", 12 if $agg_skip_reason;
 
         my $start_time = time;
 
