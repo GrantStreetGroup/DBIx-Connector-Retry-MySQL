@@ -250,22 +250,23 @@ has parse_error_class => (
     default  => 'DBIx::ParseError::MySQL',
 );
 
-=head2 disable_retry_handler
+=head2 enable_retry_handler
 
-Boolean to temporarily disable the retry handler.
+Boolean to enable the retry handler.  The default is, of course, on.  This can be turned
+off to temporarily disable the retry handler.
 
 =cut
 
-has disable_retry_handler => (
+has enable_retry_handler => (
     is       => 'rw',
     isa      => Bool,
     required => 0,
-    default  => 0,
+    default  => 1,
     lazy     => 1,
 );
 
 # Alias for backwards-compatibility
-sub clear_retry_handler { shift->disable_retry_handler(1) }
+sub clear_retry_handler { shift->enable_retry_handler(0) }
 
 ### All the lifecycle and private methods
 
@@ -313,7 +314,7 @@ sub _timeout_set_list {
 # attributes.
 sub _set_dbi_connect_info {
     my $self = shift;
-    return unless $self->_current_timeout && !$self->disable_retry_handler;
+    return unless $self->_current_timeout && $self->enable_retry_handler;
 
     my $timeout  = int( $self->_current_timeout + 0.5 );
     my $dbi_attr = $self->connect_info->[3] //= {};
@@ -331,7 +332,7 @@ after _connect => sub {
 
 sub _set_retry_session_timeouts {
     my $self = shift;
-    return unless $self->_current_timeout && !$self->disable_retry_handler;
+    return unless $self->_current_timeout && $self->enable_retry_handler;
 
     # Ironically, we aren't running our own SET SESSION commands with their own
     # retry protection, since that may lead to infinite stack recursion.  Instead,
@@ -396,7 +397,7 @@ sub _main_retry_handler {
     my ($sleep_time, $new_timeout) = $self->_timer->failure;
 
     # Retry handler is disabled?
-    $self->_reset_and_die('Retry handler disabled') if $self->disable_retry_handler;
+    $self->_reset_and_die('Retry handler disabled') unless $self->enable_retry_handler;
 
     # If it's not a retryable error, stop here
     my $parsed_error = $self->parse_error_class->new($last_error);

@@ -206,7 +206,7 @@ sub run_update_test {
         SKIP: {
             skip "DBITEST_DSN not set to a MySQL DB", 8 unless $IS_MYSQL;
             skip "Timeouts are not on in this test",  8 unless $conn->_current_timeout;
-            skip "Retry handler is disabled",         8 if     $conn->disable_retry_handler;
+            skip "Retry handler is disabled",         8 unless $conn->enable_retry_handler;
 
             my $dbh           = $conn->dbh;
             my $connect_attrs = $conn->connect_info->[3];
@@ -245,13 +245,13 @@ subtest 'clean_test_without_timeouts' => sub {
     );
 };
 
-subtest 'clean_test_with_disable_retry_handler' => sub {
+subtest 'clean_test_with_disabled_retry_handler' => sub {
     local $EXEC_COUNTER    = 0;
     local $EXEC_SUCCESS_AT = 1;
 
     run_update_test(
         extra_args => {
-            disable_retry_handler => 1,
+            enable_retry_handler => 0,
         }
     );
 };
@@ -367,7 +367,7 @@ subtest 'ran_out_of_time' => sub {
     );
 };
 
-subtest 'failure_with_disable_retry_handler' => sub {
+subtest 'failure_with_disabled_retry_handler' => sub {
     local $EXEC_COUNTER    = 0;
     local $EXEC_SUCCESS_AT = 8;
     local $EXEC_SLEEP_TIME = 5;
@@ -377,7 +377,7 @@ subtest 'failure_with_disable_retry_handler' => sub {
         attempts  => 1,
         exception => qr/DBI Exception: DBD::mysql::st execute failed: Deadlock found when trying to get lock; try restarting transaction/,
         extra_args => {
-            disable_retry_handler => 1,
+            enable_retry_handler => 0,
         }
     );
 };
