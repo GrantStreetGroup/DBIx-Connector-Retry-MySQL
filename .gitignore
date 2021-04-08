@@ -19,3 +19,4 @@ local/
 .perl-version
 DBIx-Connector-Retry-MySQL-*/
 DBIx-Connector-Retry-MySQL-*.tar.*
+t/test.db
