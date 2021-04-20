@@ -13,11 +13,6 @@ use DBIx::Connector::Retry::MySQL;
 use Env         qw< DBITEST_DSN >;
 use Time::HiRes qw< time sleep >;
 
-use Path::Class 'file';
-
-my $root = file(__FILE__)->dir->parent;
-my $db_file = $root->file('t', 'test.db');
-
 ############################################################
 
 # The SQL and the lack of a real database doesn't really matter, since the sole purpose
@@ -130,7 +125,7 @@ sub _connector {
     my %args = ( AutoCommit => 1, RaiseError => 1, PrintError => 0 );
     my @conn = $DBITEST_DSN ?
         ( (map { $ENV{"DBITEST_${_}"} || '' } qw/DSN DBUSER DBPASS/), \%args ) :
-        ( "dbi:SQLite:dbname=$db_file", '', '', \%args )
+        ( "dbi:SQLite::memory:", '', '', \%args )
     ;
 
     my $conn = DBIx::Connector::Retry::MySQL->new( connect_info => \@conn, @extra_args );
