@@ -334,12 +334,14 @@ sub _set_retry_session_timeouts {
     my $self = shift;
     return unless $self->_current_timeout && $self->enable_retry_handler;
 
+    my $timeout = int( $self->_current_timeout + 0.5 );
+
     # Ironically, we aren't running our own SET SESSION commands with their own
     # retry protection, since that may lead to infinite stack recursion.  Instead,
     # put it in a basic eval, and do a quick is_transient check.  If it passes,
     # let the next _run/_retry_loop call handle it.
 
-    my $timeout = int( $self->_current_timeout + 0.5 );
+    local $@;
     eval {
         my $dbh = $self->{_dbh};
         if ($dbh) {
