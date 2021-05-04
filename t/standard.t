@@ -148,8 +148,10 @@ sub run_update_test {
     $args{attempts} //= 1;
     $args{timeout}  //= 25;  # half of 50s timeout
 
-    $args{extra_args}              //= {};
-    $args{extra_args}{retry_debug} //= 1;
+    $args{extra_args} //= {};
+
+    ### DEBUG
+    #$args{extra_args}{retry_debug} //= 1;
 
     # force jitter off to remove randomness from tests
     my $timer_args = $args{extra_args}{timer_options} //= {};
