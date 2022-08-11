@@ -13,7 +13,7 @@ extends 'DBIx::Connector::Retry';
 use Scalar::Util           qw( weaken );
 use Storable               qw( dclone );
 use Types::Standard        qw( Bool HashRef InstanceOf ClassName );
-use Types::Common::Numeric qw( PositiveOrZeroNum );
+use Types::Common::Numeric qw( PositiveOrZeroNum PositiveOrZeroInt );
 use Time::HiRes            qw( sleep );
 
 use Algorithm::Backoff::RetryTimeouts;
@@ -233,7 +233,26 @@ has aggressive_timeouts => (
     isa      => Bool,
     required => 0,
     default  => 0,
-    lazy     => 1,
+);
+
+=head2 retries_before_error_prefix
+
+Controls the number of retries (not tries) needed before the exception message starts
+using the statistics prefix, which looks something like this:
+
+    Failed run coderef: Out of retries, attempts: 5 / 4, timer: 34.5 / 50.0 sec
+
+The default is 1, which means a failed first attempt (like a non-transient failure) will
+show a normal exception, and the second attempt will use the prefix.  You can set this to
+0 to always show the prefix, or a large number like 99 to keep the exception clean.
+
+=cut
+
+has retries_before_error_prefix => (
+    is       => 'rw',
+    isa      => PositiveOrZeroInt,
+    required => 0,
+    default  => 1,
 );
 
 =head2 parse_error_class
@@ -262,7 +281,6 @@ has enable_retry_handler => (
     isa      => Bool,
     required => 0,
     default  => 1,
-    lazy     => 1,
 );
 
 # Alias for backwards-compatibility
@@ -448,8 +466,8 @@ sub _reset_timers_and_timeouts {
 sub _reset_and_die {
     my ($self, $fail_reason) = @_;
 
-    # First error: just pass it unaltered
-    die $self->last_exception if $self->failed_attempt_count <= 1;
+    # First error (by default): just pass it unaltered
+    die $self->last_exception if $self->failed_attempt_count <= $self->retries_before_error_prefix;
 
     my $timer = $self->_timer;
     my $error = sprintf(
