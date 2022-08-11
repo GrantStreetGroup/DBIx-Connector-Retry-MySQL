@@ -4,7 +4,7 @@ DBIx::Connector::Retry::MySQL - MySQL-specific DBIx::Connector with retry suppor
 
 # VERSION
 
-version v1.0.0
+version v1.0.1
 
 # SYNOPSIS
 
@@ -118,6 +118,17 @@ timeouts:
 Default is off.  Obviously, this setting makes no sense if `max_actual_duration`
 within ["timeout\_options"](#timeout_options) is disabled.
 
+## retries\_before\_error\_prefix
+
+Controls the number of retries (not tries) needed before the exception message starts
+using the statistics prefix, which looks something like this:
+
+    Failed run coderef: Out of retries, attempts: 5 / 4, timer: 34.5 / 50.0 sec
+
+The default is 1, which means a failed first attempt (like a non-transient failure) will
+show a normal exception, and the second attempt will use the prefix.  You can set this to
+0 to always show the prefix, or a large number like 99 to keep the exception clean.
+
 ## parse\_error\_class
 
 The class used for MySQL error parsing.  By default, it's [DBIx::ParseError::MySQL](https://metacpan.org/pod/DBIx%3A%3AParseError%3A%3AMySQL), but
@@ -139,6 +150,10 @@ See ["$dbh settings" in DBIx::Connector::Retry](https://metacpan.org/pod/DBIx%3A
 
 See ["Savepoints and nested transactions" in DBIx::Connector::Retry](https://metacpan.org/pod/DBIx%3A%3AConnector%3A%3ARetry#Savepoints-and-nested-transactions).
 
+## (Ab)using $dbh directly
+
+See ["(Ab)using $dbh directly" in DBIx::Connector::Retry](https://metacpan.org/pod/DBIx%3A%3AConnector%3A%3ARetry#Ab-using-dbh-directly).
+
 ## Connection modes
 
 Due to the caveats of ["Fixup mode" in DBIx::Connector::Retry](https://metacpan.org/pod/DBIx%3A%3AConnector%3A%3ARetry#Fixup-mode), `fixup` mode is changed to
@@ -157,7 +172,7 @@ Grant Street Group <developers@grantstreet.com>
 
 # COPYRIGHT AND LICENSE
 
-This software is Copyright (c) 2020 - 2021 by Grant Street Group.
+This software is Copyright (c) 2020 - 2022 by Grant Street Group.
 
 This is free software, licensed under:
 
