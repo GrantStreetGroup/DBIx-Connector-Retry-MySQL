@@ -343,6 +343,10 @@ sub _set_retry_session_timeouts {
 
     local $@;
     eval {
+        # Don't let outside handlers ruin our error checking.  This expires before our
+        # 'die' statement below.
+        local $SIG{__DIE__};
+
         my $dbh = $self->{_dbh};
         if ($dbh) {
             $dbh->do("SET SESSION $_=$timeout") for $self->_timeout_set_list('session');
