@@ -474,6 +474,10 @@ See L<DBIx::Connector::Retry/$dbh settings>.
 
 See L<DBIx::Connector::Retry/Savepoints and nested transactions>.
 
+=head2 (Ab)using $dbh directly
+
+See L<DBIx::Connector::Retry/(Ab)using $dbh directly>.
+
 =head2 Connection modes
 
 Due to the caveats of L<DBIx::Connector::Retry/Fixup mode>, C<fixup> mode is changed to
